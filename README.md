@@ -9,7 +9,7 @@ changes *you* made.
 Run `./todos.sh` anywhere in a git repository while on a non-`main` branch. If outputting
 to a terminal, it gives a nice, human-readable format.
 
-```bash
+```
 > ./todos.sh
 README.md
 7:TODO write an intro
@@ -22,7 +22,7 @@ todos.sh
 If piped to another command (e.g., [`fpp`](https://github.com/facebook/PathPicker)), it
 uses a machine-readable format:
 
-```bash
+```
 > ./todos.sh | fpp
 README.md:7:TODO write an intro
 README.md:8:TODO write an outro
