@@ -42,3 +42,6 @@ Both of these formats are inspired by the output of
 - [ ] `json` formatting option
 - [ ] `emacs` integration
 - [ ] `vscode` integration
+
+TODO foo
+TODO bar
