@@ -12,8 +12,8 @@ if [ $? -ne 0 ]; then
 fi    
 
 commits=$(git cherry -v main | grep '^+' | cut -d' ' -f2)
-earliest=$(echo $commits | tail -n1)
-latest=$(echo $commits | head -n1)
+earliest=$(echo $commits | cut -d' ' -f1)
+latest=$(echo $commits | rev | cut -d' ' -f1 | rev)
 
 human_format() {
     local file=$1
@@ -41,7 +41,7 @@ for file in $(git diff --name-only -S"TODO" "${earliest}^" $latest); do
         | tail -n+6 \
         | grep -n '^+' \
         | grep "TODO" \
-        | sed 's/^\([0-9]\):+/\1:/')
+        | sed -E 's/^([0-9]+):\+/\1:/')
 
     if [[ -t 1 ]]; then
         human_format "${file}" "${lines_with_numbers}"
