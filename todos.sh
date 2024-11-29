@@ -3,17 +3,7 @@ set -euo pipefail
 
 GREEN='\033[1;32m'
 YELLOW='\033[1;33m'
-RESET='\033[0m' 
-
-branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
-if [ $? -ne 0 ]; then
-    echo Must be within a git repository. Exiting. >&2
-    exit 1
-fi
-
-commits=$(git cherry -v main | grep '^+' | cut -d' ' -f2)
-earliest=$(echo $commits | cut -d' ' -f1)
-latest=$(echo $commits | rev | cut -d' ' -f1 | rev)
+RESET='\033[0m'
 
 human_format() {
     local file=$1
@@ -47,6 +37,36 @@ json_format() {
     done <<< "$lines_with_numbers"
 }
 
+format=''
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --format)
+            if [[ -n "$2" && $2 != --* ]]; then
+                format="$2"
+                shift 2
+            else
+                echo "Error: --format requires an argument"
+                exit 1
+            fi
+            ;;
+        *)
+            echo "Error: Unknown option $1"
+            exit 1
+            ;;
+    esac
+done
+
+branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+if [ $? -ne 0 ]; then
+    echo Must be within a git repository. Exiting. >&2
+    exit 1
+fi
+
+commits=$(git cherry -v main | grep '^+' | cut -d' ' -f2)
+earliest=$(echo $commits | cut -d' ' -f1)
+latest=$(echo $commits | rev | cut -d' ' -f1 | rev)
+
 for file in $(git diff --name-only -S"TODO" "${earliest}^" $latest); do
     lines_with_numbers=$(git diff -U999999 "${earliest}^" $latest -- $file \
         | tail -n+6 \
@@ -54,11 +74,11 @@ for file in $(git diff --name-only -S"TODO" "${earliest}^" $latest); do
         | grep "TODO" \
         | sed -E 's/^([0-9]+):\+/\1:/')
 
-    json_format "${file}" "${lines_with_numbers}"
-    
-    # if [[ -t 1 ]]; then
-    #     human_format "${file}" "${lines_with_numbers}"
-    # else
-    #     machine_format "${file}" "${lines_with_numbers}"
-    # fi
+    if [[ $format == json ]]; then
+        json_format "${file}" "${lines_with_numbers}"
+    elif [[ -t 1 ]]; then
+        human_format "${file}" "${lines_with_numbers}"
+    else
+        machine_format "${file}" "${lines_with_numbers}"
+    fi
 done
