@@ -39,9 +39,6 @@ Both of these formats are inspired by the output of
 ## future work
 
 - [ ] rely less on the specific text output format of `git diff`
-- [ ] `json` formatting option
 - [ ] `emacs` integration
 - [ ] `vscode` integration
-
-TODO foo
-TODO bar
+- [ ] testing
