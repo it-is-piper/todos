@@ -57,9 +57,9 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+branch=$(git rev-parse --abbrev-ref HEAD)
 if [ $? -ne 0 ]; then
-    echo Must be within a git repository. Exiting. >&2
+    echo "Must be within a git repository. Exiting."
     exit 1
 fi
 
