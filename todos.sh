@@ -39,6 +39,7 @@ json_format() {
 
 format=''
 parent='main'
+diff_flags=''
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -60,6 +61,10 @@ while [[ $# -gt 0 ]]; do
                 exit 1
             fi
             ;;
+        --cached)
+            diff_flags="--cached $diff_flags"
+            shift 1
+            ;;
         --debug)
             set -x
             shift 1
@@ -79,20 +84,20 @@ fi
 
 commits=$(git cherry -v "$parent" | grep '^+' | cut -d' ' -f2)
 earliest=$(echo $commits | cut -d' ' -f1)
-latest=$(echo $commits | rev | cut -d' ' -f1 | rev)
 
-for file in $(git diff --name-only -S"TODO" "${earliest}^" $latest); do
-    lines_with_numbers=$(git diff -U999999 "${earliest}^" $latest -- "$root/$file" \
+for file in $(git diff $diff_flags --name-only -S"TODO" "${earliest}^"); do
+    absolute_path="$root/$file"
+    lines_with_numbers=$(git diff -U999999 "${earliest}^" -- "$absolute_path" \
         | tail -n+6 \
         | grep -n '^+' \
         | grep "TODO" \
         | sed -E 's/^([0-9]+):\+/\1:/')
 
     if [[ $format == json ]]; then
-        json_format "${file}" "${lines_with_numbers}"
+        json_format "${absolute_path}" "${lines_with_numbers}"
     elif [[ -t 1 ]]; then
-        human_format "${file}" "${lines_with_numbers}"
+        human_format "${absolute_path}" "${lines_with_numbers}"
     else
-        machine_format "${file}" "${lines_with_numbers}"
+        machine_format "${absolute_path}" "${lines_with_numbers}"
     fi
 done
