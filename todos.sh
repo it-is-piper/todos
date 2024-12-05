@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -eo pipefail
 
 GREEN='\033[1;32m'
 YELLOW='\033[1;33m'
@@ -14,7 +14,7 @@ human_format() {
         number=$(echo $line_with_number | cut -d: -f1)
         line=$(echo $line_with_number | cut -d: -f2-)
         echo -e "$YELLOW$number$RESET:$line"
-    done <<< "$lines_with_numbers"        
+    done <<< "$lines_with_numbers"
 }
 
 machine_format() {
@@ -38,6 +38,7 @@ json_format() {
 }
 
 format=''
+parent='main'
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -50,6 +51,19 @@ while [[ $# -gt 0 ]]; do
                 exit 1
             fi
             ;;
+        --parent)
+            if [[ -n "$2" && $2 != --* ]]; then
+                parent="$2"
+                shift 2
+            else
+                echo "Error: --parent requires an argument"
+                exit 1
+            fi
+            ;;
+        --debug)
+            set -x
+            shift 1
+            ;;
         *)
             echo "Error: Unknown option $1"
             exit 1
@@ -57,18 +71,18 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-branch=$(git rev-parse --abbrev-ref HEAD)
+root=$(git rev-parse --show-toplevel)
 if [ $? -ne 0 ]; then
     echo "Must be within a git repository. Exiting."
     exit 1
 fi
 
-commits=$(git cherry -v main | grep '^+' | cut -d' ' -f2)
+commits=$(git cherry -v "$parent" | grep '^+' | cut -d' ' -f2)
 earliest=$(echo $commits | cut -d' ' -f1)
 latest=$(echo $commits | rev | cut -d' ' -f1 | rev)
 
 for file in $(git diff --name-only -S"TODO" "${earliest}^" $latest); do
-    lines_with_numbers=$(git diff -U999999 "${earliest}^" $latest -- $file \
+    lines_with_numbers=$(git diff -U999999 "${earliest}^" $latest -- "$root/$file" \
         | tail -n+6 \
         | grep -n '^+' \
         | grep "TODO" \
