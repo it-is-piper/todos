@@ -1,10 +1,14 @@
+"""
+Implements the `todos` application. See `todos.Todos` for more information.
+"""
+
+from argparse import ArgumentParser
+from dataclasses import dataclass
+from enum import Enum
 import os
 import json
-from git import Git
 from typing import List, Optional, Any, Tuple
-from dataclasses import dataclass
-from argparse import ArgumentParser
-from enum import Enum
+from git import Git
 
 
 def _remove_nones(values: List[Optional[Any]]) -> List[Any]:
@@ -90,7 +94,8 @@ class Todos:
         # TODO For some reason this returns an empty change set when left is 1 commit before
         # right, but the verbatim command succeeds when run from a shell.
         diff_output = self.g.diff(diff_args)
-        files_with_keys = [line for line in diff_output.split("\n") if line != '']
+        files_with_keys = [
+            line for line in diff_output.split("\n") if line != '']
         return files_with_keys
 
     def _files_and_lines(self, left: str, right: Optional[str]) -> Tuple[List[str], List[Line]]:
@@ -131,22 +136,22 @@ class Todos:
 
         return self._files_and_lines(left, right)
 
+    @staticmethod
+    def human_format(files: List[str], lines: List[Line]):
+        """Print the lines in a format comparable to that of `ack` and `ag`."""
+        print("human format is unsupported")
 
-def human_format(files: List[str], lines: List[Line]):
-    """Print the lines in a format comparable to that of `ack` and `ag`."""
-    print("human format is unsupported")
+    @staticmethod
+    def machine_format(files: List[str], lines: List[Line]):
+        """Print the lines in a format consumable by `fpp`."""
+        print("machine format is unsupported")
 
-
-def machine_format(files: List[str], lines: List[Line]):
-    """Print the lines in a format consumable by `fpp`."""
-    print("machine format is unsupported")
-
-
-def json_format(files: List[str], lines: List[Line]):
-    """Print the lines as a json array to stdout."""
-    objects = [line.to_dict() for line in lines]
-    output = json.dumps(objects, indent=2)
-    print(output)
+    @staticmethod
+    def json_format(files: List[str], lines: List[Line]):
+        """Print the lines as a json array to stdout."""
+        objects = [line.to_dict() for line in lines]
+        output = json.dumps(objects, indent=2)
+        print(output)
 
 
 if __name__ == "__main__":
@@ -167,8 +172,8 @@ if __name__ == "__main__":
     files, lines = todos.files_and_lines()
 
     if args.format == Format.HUMAN:
-        human_format(files, lines)
+        Todos.human_format(files, lines)
     elif args.format == Format.MACHINE:
-        machine_format(files, lines)
+        Todos.machine_format(files, lines)
     elif args.format == Format.JSON:
-        json_format(files, lines)
+        Todos.json_format(files, lines)
