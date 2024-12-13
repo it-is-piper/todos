@@ -8,12 +8,12 @@ from enum import Enum
 
 
 def _remove_nones(values: List[Optional[Any]]) -> List[Any]:
-    """Remove all None values from a list.
-    """
+    """Remove all None values from a list."""
     return [v for v in values if v is not None]
 
 
 class Format(str, Enum):
+    """Formatting options for stdout."""
     HUMAN = "human"
     MACHINE = "machine"
     JSON = "json"
@@ -21,11 +21,13 @@ class Format(str, Enum):
 
 @dataclass
 class Line:
+    """Dataclass for a line containing the "todo" key."""
     path: str
     number: int
     text: str
 
     def to_dict(self):
+        """Represent as a dict."""
         return {
             "file": self.path,
             "line": self.number,
@@ -34,6 +36,15 @@ class Line:
 
 
 class Todos:
+    """Implements the `todos` application.
+
+    Exposes one method `files_and_lines` which returns a list of raw file paths and `Line`
+    objects for every line in the currently checked out branch that contains a specified
+    "todo" `key`.
+
+    Uses `gitpython` under the hood to run the necessary `git cherry` and `git diff`
+    commands.
+    """
     base_branch: str
     key: str
     cached: bool
@@ -108,8 +119,7 @@ class Todos:
         return paths, result
 
     def files_and_lines(self) -> Tuple[List[str], List[Line]]:
-        """Return a list of `Line` objects for added line containing `self.key`.
-        """
+        """Return a list of `Line` objects for added line containing `self.key`."""
         commits = self._commits()
 
         # We want to diff with the commit *before* the first one we added in our branch
@@ -123,14 +133,17 @@ class Todos:
 
 
 def human_format(files: List[str], lines: List[Line]):
+    """Print the lines in a format comparable to that of `ack` and `ag`."""
     print("human format is unsupported")
 
 
 def machine_format(files: List[str], lines: List[Line]):
+    """Print the lines in a format consumable by `fpp`."""
     print("machine format is unsupported")
 
 
 def json_format(files: List[str], lines: List[Line]):
+    """Print the lines as a json array to stdout."""
     objects = [line.to_dict() for line in lines]
     output = json.dumps(objects, indent=2)
     print(output)
