@@ -39,7 +39,8 @@ json_format() {
 
 format=''
 parent='main'
-diff_flags=''
+unstaged=false
+cached=false
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -61,12 +62,16 @@ while [[ $# -gt 0 ]]; do
                 exit 1
             fi
             ;;
-        --cached)
-            diff_flags="--cached $diff_flags"
-            shift 1
-            ;;
         --debug)
             set -x
+            shift 1
+            ;;
+        --unstaged)
+            unstaged=true
+            shift 1
+            ;;
+        --cached)
+            cached=true
             shift 1
             ;;
         *)
@@ -77,6 +82,12 @@ while [[ $# -gt 0 ]]; do
 done
 
 root=$(git rev-parse --show-toplevel)
+if [[ $unstaged == true ]] && [[ $cached == true ]]; then
+    echo '--unstaged and --cached are mutually exclusive. Exiting.'
+    exit 1
+fi
+
+branch=$(git rev-parse --abbrev-ref HEAD)
 if [ $? -ne 0 ]; then
     echo "Must be within a git repository. Exiting."
     exit 1
@@ -88,8 +99,13 @@ fi
 
 commits=$(git cherry -v "$parent" | grep '^+' | cut -d' ' -f2)
 earliest=$(echo $commits | cut -d' ' -f1)
+left="${earliest}^"
+right="$latest"
+if [[ $unstaged == true ]]; then
+    right=""
+fi
 
-for file in $(git diff $diff_flags --name-only -S"TODO" "${earliest}^"); do
+for file in $(git diff --name-only -S"TODO" $left $right); do
     absolute_path="$root/$file"
     lines_with_numbers=$(git diff -U999999 "${earliest}^" -- "$absolute_path" \
         | tail -n+6 \
@@ -106,7 +122,8 @@ for file in $(git diff $diff_flags --name-only -S"TODO" "${earliest}^"); do
     fi
 done
 
+# TODO yet another one!
 # TODO look at that!
 if [[ $format == json ]]; then
-    echo -e "$ndjson" | jq -s ''
+    echo -e "$ndjson" | jq -s '.'
 fi
