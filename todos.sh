@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
 set -eo pipefail
 
+### Constants
+
 GREEN='\033[1;32m'
 YELLOW='\033[1;33m'
 RESET='\033[0m'
+
+### Formatting
 
 human_format() {
     local file=$1
@@ -37,10 +41,13 @@ json_format() {
     done <<< "$lines_with_numbers"
 }
 
+### Main
+
 format=''
 parent='main'
 unstaged=false
 cached=false
+target_branch=main
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -83,13 +90,13 @@ done
 
 root=$(git rev-parse --show-toplevel)
 if [[ $unstaged == true ]] && [[ $cached == true ]]; then
-    echo '--unstaged and --cached are mutually exclusive. Exiting.'
+    echo 'Error: --unstaged and --cached are mutually exclusive. Exiting.'
     exit 1
 fi
 
 branch=$(git rev-parse --abbrev-ref HEAD)
 if [ $? -ne 0 ]; then
-    echo "Must be within a git repository. Exiting."
+    echo "Error: Must be within a git repository. Exiting."
     exit 1
 fi
 
@@ -101,7 +108,7 @@ commits=$(git cherry -v "$parent" | grep '^+' | cut -d' ' -f2)
 earliest=$(echo $commits | cut -d' ' -f1)
 left="${earliest}^"
 right="$latest"
-if [[ $unstaged == true ]]; then
+if [[ $unstaged == true || $cached == true ]]; then
     right=""
 fi
 
@@ -122,8 +129,6 @@ for file in $(git diff --name-only -S"TODO" $left $right); do
     fi
 done
 
-# TODO yet another one!
-# TODO look at that!
 if [[ $format == json ]]; then
     echo -e "$ndjson" | jq -s '.'
 fi
