@@ -82,6 +82,10 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+if [[ $format == json ]]; then
+   ndjson=''
+fi
+
 commits=$(git cherry -v "$parent" | grep '^+' | cut -d' ' -f2)
 earliest=$(echo $commits | cut -d' ' -f1)
 
@@ -94,10 +98,15 @@ for file in $(git diff $diff_flags --name-only -S"TODO" "${earliest}^"); do
         | sed -E 's/^([0-9]+):\+/\1:/')
 
     if [[ $format == json ]]; then
-        json_format "${absolute_path}" "${lines_with_numbers}"
+        ndjson="${ndjson}$(json_format "${file}" "${lines_with_numbers}")"
     elif [[ -t 1 ]]; then
         human_format "${absolute_path}" "${lines_with_numbers}"
     else
         machine_format "${absolute_path}" "${lines_with_numbers}"
     fi
 done
+
+# TODO look at that!
+if [[ $format == json ]]; then
+    echo -e "$ndjson" | jq -s ''
+fi
