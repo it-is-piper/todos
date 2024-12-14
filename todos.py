@@ -7,13 +7,19 @@ from dataclasses import dataclass
 from enum import Enum
 import os
 import json
-from typing import List, Optional, Any, Tuple
+from typing import List, Optional, Any, Tuple, Dict
 from git import Git
 
 
 def _remove_nones(values: List[Optional[Any]]) -> List[Any]:
     """Remove all None values from a list."""
     return [v for v in values if v is not None]
+
+
+class Colors:
+    BOLD_GREEN = '\033[1;32m'
+    BOLD_YELLOW = '\033[1;33m'
+    RESET = '\033[0m'
 
 
 class Format(str, Enum):
@@ -115,7 +121,7 @@ class Todos:
 
             # we need to figure out what the line number is for each added line
             lines_with_key = [
-                Line(path=path, number=number, text=text)
+                Line(path=path, number=number, text=text[1:])
                 for number, text in enumerate(diff_lines)
                 if text[:1] == "+" and self.key in text
             ]
@@ -137,17 +143,32 @@ class Todos:
         return self._files_and_lines(left, right)
 
     @staticmethod
-    def human_format(files: List[str], lines: List[Line]):
+    def _lines_by_path(lines: List[Line]) -> Dict[str, Line]:
+        mapping = {}
+        for line in lines:
+            if mapping.get(line.path) is None:
+                mapping[line.path] = []
+            mapping[line.path].append(line)
+        return mapping
+
+    @classmethod
+    def human_format(cls, lines: List[Line]):
         """Print the lines in a format comparable to that of `ack` and `ag`."""
-        print("human format is unsupported")
+        # TODO different name for "lines"
+        for path, lines in Todos._lines_by_path(lines).items():
+            print(f"{Colors.BOLD_GREEN}{path}{Colors.RESET}")
+            for line in lines:
+                print(
+                    f"{Colors.BOLD_YELLOW}{line.number}{Colors.RESET}: {line.text}")
 
-    @staticmethod
-    def machine_format(files: List[str], lines: List[Line]):
+    @classmethod
+    def machine_format(cls, lines: List[Line]):
         """Print the lines in a format consumable by `fpp`."""
-        print("machine format is unsupported")
+        for line in lines:
+            print(f"{line.path}:{line.number}:{line.text}")
 
-    @staticmethod
-    def json_format(files: List[str], lines: List[Line]):
+    @classmethod
+    def json_format(cls, lines: List[Line]):
         """Print the lines as a json array to stdout."""
         objects = [line.to_dict() for line in lines]
         output = json.dumps(objects, indent=2)
@@ -159,7 +180,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--format",
         choices=[Format.HUMAN, Format.MACHINE, Format.JSON],
-        default=Format.JSON
+        default=Format.HUMAN
     )
     # TODO add validation that these aren't passed together
     # TODO also can't remember how to set things as flags
@@ -169,11 +190,11 @@ if __name__ == "__main__":
 
     # TODO switch back to using args once I have them
     todos = Todos(unstaged=True, cached=False)
-    files, lines = todos.files_and_lines()
+    _, lines = todos.files_and_lines()
 
-    if args.format == Format.HUMAN:
-        Todos.human_format(files, lines)
-    elif args.format == Format.MACHINE:
-        Todos.machine_format(files, lines)
+    if os.isatty(1) and args.format == Format.HUMAN:
+        Todos.human_format(lines)
+    elif not os.isatty(1) or args.format == Format.MACHINE:
+        Todos.machine_format(lines)
     elif args.format == Format.JSON:
-        Todos.json_format(files, lines)
+        Todos.json_format(lines)
