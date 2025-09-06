@@ -3,12 +3,15 @@ Implements the `todos` application. See `todos.Todos` for more information.
 """
 
 import json
+import logging
 import os
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 
 from git import Git
+
+logger = logging.getLogger(__file__)
 
 
 def _remove_nones(values: List[Optional[Any]]) -> List[Any]:
@@ -92,7 +95,7 @@ class Todos:
 
     def _files(self, left: str, right: Optional[str] = None) -> List[str]:
         # Get names of files that changed in this commit range that have the key in them
-        flags = ["--name-only", f'-S"{self.key}"']
+        flags = ["--no-ext-diff", "--name-only", f'-S"{self.key}"']
         if self.cached:
             flags.append("--cached")
         diff_args = _remove_nones([*flags, left, right])
@@ -144,8 +147,8 @@ class Todos:
         return self._files_and_lines(left, right)
 
     @staticmethod
-    def _lines_by_path(lines: List[Line]) -> Dict[str, Line]:
-        mapping = {}
+    def _lines_by_path(lines: List[Line]) -> Dict[str, list[Line]]:
+        mapping: dict[str, list[Line]] = {}
         for line in lines:
             if mapping.get(line.path) is None:
                 mapping[line.path] = []
