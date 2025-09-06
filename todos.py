@@ -3,15 +3,13 @@ Implements the `todos` application. See `todos.Todos` for more information.
 """
 
 import json
-import logging
 import os
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 
+import click
 from git import Git
-
-logger = logging.getLogger(__file__)
 
 
 def _remove_nones(values: List[Optional[Any]]) -> List[Any]:
@@ -82,7 +80,8 @@ class Todos:
 
     def _commits(self) -> List[str]:
         # cherry outputs each commit that's in one branch but not the other
-        cherry_output = self.g.cherry(["-v", self.base_branch])
+        args = ["-v", self.base_branch]
+        cherry_output = self.g.cherry(args)
         all_cherries = cherry_output.split("\n")
 
         # git diff appends a "+ " in front of commits in the current branch that are not
@@ -98,11 +97,11 @@ class Todos:
         flags = ["--no-ext-diff", "--name-only", f'-S"{self.key}"']
         if self.cached:
             flags.append("--cached")
-        diff_args = _remove_nones([*flags, left, right])
+        args = _remove_nones([*flags, left, right])
 
         # TODO For some reason this returns an empty change set when left is 1 commit before
         # right, but the verbatim command succeeds when run from a shell.
-        diff_output = self.g.diff(diff_args)
+        diff_output = self.g.diff(args)
         files_with_keys = [line for line in diff_output.split("\n") if line != ""]
         return files_with_keys
 
@@ -117,8 +116,8 @@ class Todos:
         result: List[Line] = []
 
         for path in paths:
-            diff_args = _remove_nones([*flags, left, right, "--", path])
-            diff_output = self.g.diff(diff_args)
+            args = _remove_nones([*flags, left, right, "--", path])
+            diff_output = self.g.diff(args)
 
             # ignore the first 6 lines, which display metadata
             diff_lines = diff_output.split("\n")[6:]
@@ -160,19 +159,21 @@ class Todos:
         """Print the lines in a format comparable to that of `ack` and `ag`."""
         # TODO different name for "lines"
         for path, lines in Todos._lines_by_path(lines).items():
-            print(f"{Colors.BOLD_GREEN}{path}{Colors.RESET}")
+            click.secho(f"{Colors.BOLD_GREEN}{path}{Colors.RESET}")
             for line in lines:
-                print(f"{Colors.BOLD_YELLOW}{line.number}{Colors.RESET}: {line.text}")
+                click.secho(
+                    f"{Colors.BOLD_YELLOW}{line.number}{Colors.RESET}: {line.text}"
+                )
 
     @classmethod
     def machine_format(cls, lines: List[Line]):
         """Print the lines in a format consumable by `fpp`."""
         for line in lines:
-            print(f"{line.path}:{line.number}:{line.text}")
+            click.secho(f"{line.path}:{line.number}:{line.text}")
 
     @classmethod
     def json_format(cls, lines: List[Line]):
         """Print the lines as a json array to stdout."""
         objects = [line.to_dict() for line in lines]
         output = json.dumps(objects, indent=2)
-        print(output)
+        click.secho(output)
