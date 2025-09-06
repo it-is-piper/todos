@@ -1,34 +1,33 @@
 import os
-from argparse import ArgumentParser
+
+import click
 
 from todos import Format, Todos
 
 
-def main():
-    # TODO test a thing
-    parser = ArgumentParser()
-    parser.add_argument(
-        "--format",
-        choices=[Format.HUMAN, Format.MACHINE, Format.JSON],
-        default=Format.HUMAN,
-    )
-    # TODO add validation that these aren't passed together
-    # TODO also can't remember how to set things as flags
-    # parser.add_argument("--cached", default=False)
-    # parser.add_argument("--unstaged", default=False))
-    args = parser.parse_args()
+@click.group()
+def cli():
+    pass
 
-    # TODO switch back to using args once I have them
+
+@click.command()
+@click.argument("format", default=Format.HUMAN, type=click.Choice(Format))
+@click.argument("unstaged", default=True, type=click.BOOL)
+@click.argument("cached", default=False, type=click.BOOL)
+def todos(format: str, unstaged: bool, cached: bool):
+    _format = format
     todos = Todos(unstaged=True, cached=False)
     _, lines = todos.files_and_lines()
 
-    if os.isatty(1) and args.format == Format.HUMAN:
+    if os.isatty(1) and _format == Format.HUMAN:
         Todos.human_format(lines)
-    elif not os.isatty(1) or args.format == Format.MACHINE:
+    elif not os.isatty(1) or _format == Format.MACHINE:
         Todos.machine_format(lines)
-    elif args.format == Format.JSON:
+    elif _format == Format.JSON:
         Todos.json_format(lines)
 
 
+cli.add_command(todos)
+
 if __name__ == "__main__":
-    main()
+    cli()
