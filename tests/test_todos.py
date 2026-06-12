@@ -7,8 +7,6 @@ then narrow via diagnostic tests to the specific git diff call.
 import subprocess
 
 
-import pytest
-
 from tests._fixture_repo import make_repo
 from tests.conftest import REAL_TODOS_SH
 
@@ -72,56 +70,84 @@ def test_sh_finds_todos_on_feature_branch(tmp_path):
 
 
 def test_py_finds_nothing_on_feature_branch(tmp_path):
-    """THE FAILING CASE: todos.py returns empty where .sh finds lines."""
     repo = make_repo(
         tmp_path,
         feature_commits=_two_commit_feature(),
     )
     paths, lines = run_py(repo, base_branch="main")
-    assert paths == [] and lines == [], (
-        f"Expected empty (the bug); got paths={paths!r} lines={lines!r}"
-    )
+    paths_set = set(paths) | {l.path for l in lines}
+    assert "c.txt" in paths_set, f"py missed c.txt; paths={paths!r} lines={lines!r}"
+    assert "d.txt" in paths_set, f"py missed d.txt; paths={paths!r} lines={lines!r}"
 
 
 def test_py_finds_todos_with_one_commit(tmp_path):
-    """Isolates the 1-commit boundary. See todo comment in todos.py."""
     repo = make_repo(
         tmp_path,
         feature_commits=_one_commit_feature(),
     )
-    # .sh on the same setup
     sh_out = run_sh(repo, "--parent", "main")
     assert "c.txt" in sh_out, f"sh baseline failed on 1-commit branch:\n{sh_out}"
-    # .py
+
     paths, lines = run_py(repo, base_branch="main")
-    assert paths == [] and lines == [], (
-        f"Expected empty; got paths={paths!r} lines={lines!r}"
+    paths_set = set(paths) | {l.path for l in lines}
+    assert "c.txt" in paths_set, (
+        f"py missed c.txt on 1-commit branch; paths={paths!r} lines={lines!r}"
     )
 
 
 def test_unstaged_finds_todo(tmp_path):
-    # NOTE: docs only promise the "feature branch vs main" use case.
-    # The --unstaged and --cached modes of todos.sh don't see untracked
-    # files (pickaxe scans working tree, not untracked). Skipping parity
-    # check for these modes; covered separately if needed.
-    pytest.skip("--unstaged mode not covered (out of PLAN scope)")
+    # Modify the existing tracked file c.txt with a new unstaged TODO line.
+    repo = make_repo(
+        tmp_path,
+        feature_commits=_two_commit_feature(),
+    )
+    # Append an unstaged TODO to a tracked file.
+    with open(repo / "c.txt", "a") as f:
+        f.write("\n# TODO gamma\n")
+
+    sh_out = run_sh(repo, "--parent", "main", "--unstaged")
+    # .sh should find the unstaged TODO in c.txt.
+    assert "c.txt" in sh_out and "TODO gamma" in sh_out, (
+        f"sh missed unstaged TODO in c.txt:\n{sh_out}"
+    )
+
+    paths, lines = run_py(repo, base_branch="main", unstaged=True)
+    hit = [l for l in lines if l.path == "c.txt" and "TODO gamma" in l.text]
+    assert hit, f"py missed unstaged TODO; paths={paths!r} lines={lines!r}"
 
 
 def test_cached_finds_todo(tmp_path):
-    pytest.skip("--cached mode not covered (out of PLAN scope)")
+    """TODO staged in index but not committed."""
+    repo = make_repo(
+        tmp_path,
+        feature_commits=_two_commit_feature(),
+    )
+    # Stage a new file with a TODO.
+    (repo / "f.txt").write_text("# TODO delta\n")
+    subprocess.run(["git", "add", "f.txt"], cwd=repo, check=True)
+
+    sh_out = run_sh(repo, "--parent", "main", "--cached")
+    assert "f.txt" in sh_out and "TODO delta" in sh_out, (
+        f"sh missed cached f.txt:\n{sh_out}"
+    )
+
+    paths, lines = run_py(repo, base_branch="main", cached=True)
+    hit = [l for l in lines if l.path == "f.txt" and "TODO delta" in l.text]
+    assert hit, f"py missed cached TODO; paths={paths!r} lines={lines!r}"
 
 
 def test_trunk_branch_finds_nothing(tmp_path):
-    # On main, cherry has no "+" commits -> _commits() returns [].
-    # This is a known crash site (commits[0]^) in todos.py.
+    """On main, cherry has no '+' commits. Should return empty cleanly, not crash."""
     repo = make_repo(
         tmp_path,
         feature_commits=_two_commit_feature(),
     )
     # Make sure we're on main.
     subprocess.run(["git", "checkout", "-q", "main"], cwd=repo, check=True)
-    with pytest.raises(IndexError):
-        run_py(repo, base_branch="main")
+    paths, lines = run_py(repo, base_branch="main")
+    assert paths == [] and lines == [], (
+        f"on trunk expected empty; got paths={paths!r} lines={lines!r}"
+    )
 
 
 # ---------- diagnostic (print-only) ----------
@@ -152,7 +178,6 @@ def test_py_diff_files_arg_forms(tmp_path, capsys):
     try:
         os.chdir(repo)
         from todos import Git
-        from tests._fixture_repo import _run  # type: ignore  # reuse internal helper
     finally:
         os.chdir(old)
 

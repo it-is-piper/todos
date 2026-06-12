@@ -91,14 +91,14 @@ class Todos:
         return hashes
 
     def _files(self, left: str, right: Optional[str] = None) -> List[str]:
-        # Get names of files that changed in this commit range that have the key in them
-        flags = ["--name-only", f"-S\"{self.key}\""]
+        # Get names of files that changed in this commit range that have the key in them.
+        # -S must be passed as a separate arg; "-S<TODO>" was dropped by GitPython's
+        # argv parser, returning an empty result.
+        flags = ["--name-only", "-S", self.key]
         if self.cached:
             flags.append("--cached")
         diff_args = _remove_nones([*flags, left, right])
 
-        # TODO For some reason this returns an empty change set when left is 1 commit before
-        # right, but the verbatim command succeeds when run from a shell.
         diff_output = self.g.diff(diff_args)
         files_with_keys = [
             line for line in diff_output.split("\n") if line != '']
@@ -132,6 +132,10 @@ class Todos:
     def files_and_lines(self) -> Tuple[List[str], List[Line]]:
         """Return a list of `Line` objects for added line containing `self.key`."""
         commits = self._commits()
+
+        # On the base branch there are no added commits, so nothing was introduced here.
+        if not commits:
+            return [], []
 
         # We want to diff with the commit *before* the first one we added in our branch
         left = f"{commits[0]}^"
