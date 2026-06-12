@@ -1,0 +1,14 @@
+[project]
+name = "todos"
+version = "0.1.0"
+description = "Find TODO and FIXME comments introduced on the current branch vs a base branch."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "gitpython>=3.1",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.3",
+]
