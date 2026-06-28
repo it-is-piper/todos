@@ -1,0 +1,33 @@
+from argparse import ArgumentParser
+from todos.todos import Todos, Format
+import os
+
+
+# TODO does this work?
+def app():
+    parser = ArgumentParser()
+    parser.add_argument(
+        "--format",
+        choices=[Format.HUMAN, Format.MACHINE, Format.JSON],
+        default=Format.HUMAN,
+    )
+    parser.add_argument("--cached", action="store_true")
+    parser.add_argument("--unstaged", action="store_true")
+    args = parser.parse_args()
+
+    if args.unstaged and args.cached:
+        raise ValueError("--unstaged and --cached are mutually exclusive")
+
+    todos = Todos(unstaged=args.unstaged, cached=args.cached)
+    _, lines = todos.files_and_lines()
+
+    if os.isatty(1) and args.format == Format.HUMAN:
+        Todos.human_format(lines)
+    elif not os.isatty(1) or args.format == Format.MACHINE:
+        Todos.machine_format(lines)
+    elif args.format == Format.JSON:
+        Todos.json_format(lines)
+
+
+if __name__ == "__main__":
+    app()
