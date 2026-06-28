@@ -2,7 +2,6 @@
 Implements the `todos` application. See `todos.Todos` for more information.
 """
 
-from argparse import ArgumentParser
 from dataclasses import dataclass
 from enum import Enum
 import os
@@ -17,13 +16,14 @@ def _remove_nones(values: List[Optional[Any]]) -> List[Any]:
 
 
 class Colors:
-    BOLD_GREEN = '\033[1;32m'
-    BOLD_YELLOW = '\033[1;33m'
-    RESET = '\033[0m'
+    BOLD_GREEN = "\033[1;32m"
+    BOLD_YELLOW = "\033[1;33m"
+    RESET = "\033[0m"
 
 
 class Format(str, Enum):
     """Formatting options for stdout."""
+
     HUMAN = "human"
     MACHINE = "machine"
     JSON = "json"
@@ -32,17 +32,14 @@ class Format(str, Enum):
 @dataclass
 class Line:
     """Dataclass for a line containing the "todo" key."""
+
     path: str
     number: int
     text: str
 
     def to_dict(self):
         """Represent as a dict."""
-        return {
-            "file": self.path,
-            "line": self.number,
-            "text": self.text
-        }
+        return {"file": self.path, "line": self.number, "text": self.text}
 
 
 class Todos:
@@ -55,17 +52,20 @@ class Todos:
     Uses `gitpython` under the hood to run the necessary `git cherry` and `git diff`
     commands.
     """
+
     base_branch: str
     key: str
     cached: bool
     unstaged: bool
     g: Git
 
-    def __init__(self,
-                 base_branch: str = "main",
-                 key: str = "TODO",
-                 cached: bool = False,
-                 unstaged: bool = False):
+    def __init__(
+        self,
+        base_branch: str = "main",
+        key: str = "TODO",
+        cached: bool = False,
+        unstaged: bool = False,
+    ):
         self.base_branch = base_branch
         self.key = key
         self.cached = cached
@@ -73,9 +73,7 @@ class Todos:
         self.g = Git(os.getcwd())
 
         if self.cached and self.unstaged:
-            # TODO use a more specific exception type
-            raise Exception(
-                "cached and unstaged are mutually exclusive options")
+            raise ValueError("cached and unstaged are mutually exclusive options")
 
     def _commits(self) -> List[str]:
         # cherry outputs each commit that's in one branch but not the other
@@ -92,19 +90,18 @@ class Todos:
 
     def _files(self, left: str, right: Optional[str] = None) -> List[str]:
         # Get names of files that changed in this commit range that have the key in them.
-        # -S must be passed as a separate arg; "-S<TODO>" was dropped by GitPython's
-        # argv parser, returning an empty result.
         flags = ["--name-only", "-S", self.key]
         if self.cached:
             flags.append("--cached")
         diff_args = _remove_nones([*flags, left, right])
 
         diff_output = self.g.diff(diff_args)
-        files_with_keys = [
-            line for line in diff_output.split("\n") if line != '']
+        files_with_keys = [line for line in diff_output.split("\n") if line != ""]
         return files_with_keys
 
-    def _files_and_lines(self, left: str, right: Optional[str]) -> Tuple[List[str], List[Line]]:
+    def _files_and_lines(
+        self, left: str, right: Optional[str]
+    ) -> Tuple[List[str], List[Line]]:
         flags = ["-U999999"]
         if self.cached:
             flags.append("--cached")
@@ -147,7 +144,7 @@ class Todos:
         return self._files_and_lines(left, right)
 
     @staticmethod
-    def _lines_by_path(lines: List[Line]) -> Dict[str, Line]:
+    def _lines_by_path(lines: List[Line]) -> Dict[str, List[Line]]:
         mapping = {}
         for line in lines:
             if mapping.get(line.path) is None:
@@ -158,12 +155,10 @@ class Todos:
     @classmethod
     def human_format(cls, lines: List[Line]):
         """Print the lines in a format comparable to that of `ack` and `ag`."""
-        # TODO different name for "lines"
-        for path, lines in Todos._lines_by_path(lines).items():
+        for path, _lines in Todos._lines_by_path(lines).items():
             print(f"{Colors.BOLD_GREEN}{path}{Colors.RESET}")
-            for line in lines:
-                print(
-                    f"{Colors.BOLD_YELLOW}{line.number}{Colors.RESET}: {line.text}")
+            for line in _lines:
+                print(f"{Colors.BOLD_YELLOW}{line.number}{Colors.RESET}: {line.text}")
 
     @classmethod
     def machine_format(cls, lines: List[Line]):
@@ -177,28 +172,3 @@ class Todos:
         objects = [line.to_dict() for line in lines]
         output = json.dumps(objects, indent=2)
         print(output)
-
-
-if __name__ == "__main__":
-    parser = ArgumentParser()
-    parser.add_argument(
-        "--format",
-        choices=[Format.HUMAN, Format.MACHINE, Format.JSON],
-        default=Format.HUMAN
-    )
-    # TODO add validation that these aren't passed together
-    # TODO also can't remember how to set things as flags
-    # parser.add_argument("--cached", default=False)
-    # parser.add_argument("--unstaged", default=False))
-    args = parser.parse_args()
-
-    # TODO switch back to using args once I have them
-    todos = Todos(unstaged=True, cached=False)
-    _, lines = todos.files_and_lines()
-
-    if os.isatty(1) and args.format == Format.HUMAN:
-        Todos.human_format(lines)
-    elif not os.isatty(1) or args.format == Format.MACHINE:
-        Todos.machine_format(lines)
-    elif args.format == Format.JSON:
-        Todos.json_format(lines)

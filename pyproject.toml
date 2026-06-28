@@ -1,14 +1,27 @@
 [project]
 name = "todos"
-version = "0.1.0"
+version = "1.0.0"
 description = "Find TODO and FIXME comments introduced on the current branch vs a base branch."
 readme = "README.md"
 requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE.*"]
+authors = [{ name = "Piper Maxine Baker", email = "dev@piper.community" }]
+maintainers = [{ name = "Piper Maxine Baker", email = "dev@piper.community" }]
+keywords = ["fixme", "git", "task", "todo"]
 dependencies = [
-    "gitpython>=3.1",
+  "gitpython>=3.1",
 ]
+
+[project.scripts]
+todos = "todos.cli:app"
 
 [dependency-groups]
 dev = [
-    "pytest>=9.0.3",
+  "ipdb>=0.13.13",
+  "pytest>=9.0.3",
 ]
+
+[build-system]
+requires = ["uv_build >= 0.11.23, <0.12.0"]
+build-backend = "uv_build"
