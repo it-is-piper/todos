@@ -3,7 +3,6 @@ from todos import Todos, Format
 import os
 
 
-# TODO does this work?
 def app():
     parser = ArgumentParser()
     parser.add_argument(
@@ -14,9 +13,6 @@ def app():
     parser.add_argument("--cached", action="store_true")
     parser.add_argument("--unstaged", action="store_true")
     args = parser.parse_args()
-
-    if args.unstaged and args.cached:
-        raise ValueError("--unstaged and --cached are mutually exclusive")
 
     todos = Todos(unstaged=args.unstaged, cached=args.cached)
     _, lines = todos.files_and_lines()

@@ -73,8 +73,7 @@ class Todos:
         self.g = Git(os.getcwd())
 
         if self.cached and self.unstaged:
-            # TODO use a more specific exception type
-            raise Exception("cached and unstaged are mutually exclusive options")
+            raise ValueError("cached and unstaged are mutually exclusive options")
 
     def _commits(self) -> List[str]:
         # cherry outputs each commit that's in one branch but not the other
@@ -91,8 +90,6 @@ class Todos:
 
     def _files(self, left: str, right: Optional[str] = None) -> List[str]:
         # Get names of files that changed in this commit range that have the key in them.
-        # -S must be passed as a separate arg; "-S<TODO>" was dropped by GitPython's
-        # argv parser, returning an empty result.
         flags = ["--name-only", "-S", self.key]
         if self.cached:
             flags.append("--cached")
@@ -147,7 +144,7 @@ class Todos:
         return self._files_and_lines(left, right)
 
     @staticmethod
-    def _lines_by_path(lines: List[Line]) -> Dict[str, Line]:
+    def _lines_by_path(lines: List[Line]) -> Dict[str, List[Line]]:
         mapping = {}
         for line in lines:
             if mapping.get(line.path) is None:
@@ -158,10 +155,9 @@ class Todos:
     @classmethod
     def human_format(cls, lines: List[Line]):
         """Print the lines in a format comparable to that of `ack` and `ag`."""
-        # TODO different name for "lines"
-        for path, lines in Todos._lines_by_path(lines).items():
+        for path, _lines in Todos._lines_by_path(lines).items():
             print(f"{Colors.BOLD_GREEN}{path}{Colors.RESET}")
-            for line in lines:
+            for line in _lines:
                 print(f"{Colors.BOLD_YELLOW}{line.number}{Colors.RESET}: {line.text}")
 
     @classmethod
