@@ -5,16 +5,18 @@ then narrow via diagnostic tests to the specific git diff call.
 """
 
 import subprocess
-
+from pathlib import Path
+import os
 
 from tests._fixture_repo import make_repo
-from tests.conftest import REAL_TODOS_SH
+
+TODOS_SH_PATH = Path(os.getcwd(), "tools", "todos.sh")
 
 
 def run_sh(repo, *args: str) -> str:
     """Run the real todos.sh in `repo` and return stdout."""
     result = subprocess.run(
-        ["bash", str(REAL_TODOS_SH), *args],
+        ["bash", str(TODOS_SH_PATH), *args],
         cwd=repo,
         capture_output=True,
         text=True,
@@ -171,16 +173,9 @@ def test_py_cherry_hashes(tmp_path, capsys):
 
 def test_py_diff_files_arg_forms(tmp_path, capsys):
     """Try multiple forms of g.diff(...) and print the file count for each."""
+    from git import Git
+
     repo = make_repo(tmp_path, feature_commits=_two_commit_feature())
-    import os
-
-    old = os.getcwd()
-    try:
-        os.chdir(repo)
-        from todos import Git
-    finally:
-        os.chdir(old)
-
     g = Git(repo)
 
     # Get cherry hashes

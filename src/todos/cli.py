@@ -1,5 +1,5 @@
 from argparse import ArgumentParser
-from todos.todos import Todos, Format
+from todos import Todos, Format
 import os
 
 
