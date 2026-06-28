@@ -1,5 +1,5 @@
 [project]
-name = "todos"
+name = "tofix"
 version = "1.0.0"
 description = "Find TODO and FIXME comments introduced on the current branch vs a base branch."
 readme = "README.md"
@@ -14,7 +14,7 @@ dependencies = [
 ]
 
 [project.scripts]
-todos = "todos.cli:app"
+tofix = "tofix.cli:app"
 
 [dependency-groups]
 dev = [

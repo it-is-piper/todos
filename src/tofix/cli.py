@@ -1,5 +1,5 @@
 from argparse import ArgumentParser
-from todos import Todos, Format
+from tofix import Tofix, Format
 import os
 
 
@@ -14,15 +14,15 @@ def app():
     parser.add_argument("--unstaged", action="store_true")
     args = parser.parse_args()
 
-    todos = Todos(unstaged=args.unstaged, cached=args.cached)
+    todos = Tofix(unstaged=args.unstaged, cached=args.cached)
     _, lines = todos.files_and_lines()
 
     if os.isatty(1) and args.format == Format.HUMAN:
-        Todos.human_format(lines)
+        Tofix.human_format(lines)
     elif not os.isatty(1) or args.format == Format.MACHINE:
-        Todos.machine_format(lines)
+        Tofix.machine_format(lines)
     elif args.format == Format.JSON:
-        Todos.json_format(lines)
+        Tofix.json_format(lines)
 
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-# `todos`
+# `tofix`
 
 A tool to find all `TODO` and `FIXME` comments introduced on your dev branch. No more
 polluting your task list with those left by previous developers in the codebase. Just the
@@ -6,11 +6,11 @@ changes *you* made.
 
 ## usage
 
-Run `./todos.sh` anywhere in a git repository while on a non-`main` branch. If outputting
+Run `tofix` anywhere in a git repository while on a non-`main` branch. If outputting
 to a terminal, it gives a nice, human-readable format.
 
 ```
-> ./todos.sh
+> tofix
 README.md
 7:TODO write an intro
 8:TODO write an outro
@@ -23,7 +23,7 @@ If piped to another command (e.g., [`fpp`](https://github.com/facebook/PathPicke
 uses a machine-readable format:
 
 ```
-> ./todos.sh | fpp
+> tofix | fpp
 README.md:7:TODO write an intro
 README.md:8:TODO write an outro
 todos.sh:48:for file in $(git diff --name-only -S"TODO" "${earliest}^" $latest); do
@@ -38,7 +38,5 @@ Both of these formats are inspired by the output of
 
 ## future work
 
-- [ ] rely less on the specific text output format of `git diff`
 - [ ] `emacs` integration
 - [ ] `vscode` integration
-- [ ] testing

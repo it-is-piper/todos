@@ -1,5 +1,5 @@
 """
-Implements the `todos` application. See `todos.Todos` for more information.
+Implements the `todos` application. See `todos.Tofix` for more information.
 """
 
 from dataclasses import dataclass
@@ -42,7 +42,7 @@ class Line:
         return {"file": self.path, "line": self.number, "text": self.text}
 
 
-class Todos:
+class Tofix:
     """Implements the `todos` application.
 
     Exposes one method `files_and_lines` which returns a list of raw file paths and `Line`
@@ -155,7 +155,7 @@ class Todos:
     @classmethod
     def human_format(cls, lines: List[Line]):
         """Print the lines in a format comparable to that of `ack` and `ag`."""
-        for path, _lines in Todos._lines_by_path(lines).items():
+        for path, _lines in Tofix._lines_by_path(lines).items():
             print(f"{Colors.BOLD_GREEN}{path}{Colors.RESET}")
             for line in _lines:
                 print(f"{Colors.BOLD_YELLOW}{line.number}{Colors.RESET}: {line.text}")

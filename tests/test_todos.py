@@ -27,14 +27,14 @@ def run_sh(repo, *args: str) -> str:
 def run_py(
     repo, *, base_branch: str = "main", cached: bool = False, unstaged: bool = False
 ):
-    """Invoke Todos.files_and_lines() from inside `repo`."""
-    from todos import Todos  # imported lazily so env can set cwd
+    """Invoke Tofix.files_and_lines() from inside `repo`."""
+    from tofix import Tofix  # imported lazily so env can set cwd
     import os
 
     old = os.getcwd()
     try:
         os.chdir(repo)
-        t = Todos(base_branch=base_branch, cached=cached, unstaged=unstaged)
+        t = Tofix(base_branch=base_branch, cached=cached, unstaged=unstaged)
         return t.files_and_lines()
     finally:
         os.chdir(old)
@@ -54,9 +54,9 @@ def _one_commit_feature():
 
 
 def test_todos_py_imports():
-    from todos import Todos, Line, Format
+    from tofix import Tofix, Line, Format
 
-    assert Todos is not None
+    assert Tofix is not None
     assert Line is not None
     assert Format is not None
 
@@ -162,9 +162,9 @@ def test_py_cherry_hashes(tmp_path, capsys):
     old = os.getcwd()
     try:
         os.chdir(repo)
-        from todos import Todos
+        from tofix import Tofix
 
-        hashes = Todos(base_branch="main")._commits()
+        hashes = Tofix(base_branch="main")._commits()
     finally:
         os.chdir(old)
     print(f"\n[diag] cherry hashes on feat/x: {hashes}")
